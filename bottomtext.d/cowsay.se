@@ -1,0 +1,12 @@
+# The packages you want in a bash-style array
+PACKAGES=( cowsay cowsay-beefymiracle )
+
+
+# --- All of the following are NYI --- #
+
+# Just place the .repo file in /etc/yum.d for now
+# EXTRA_COPR=() # Extra inline copr
+# EXTRA_YUMD_DIR="" # Dir with .repo for sysext only 
+# MAN=no # Disable manpages
+# RELOCATE_UDEV=no # Relocate udev from /etc/udev to /usr/lib/udev
+# ALLOW_ERASING=no

@@ -1,0 +1,44 @@
+#!/bin/bash
+set -euo pipefail
+
+D_PATH="/etc/bottomtext/bottomtext.d"
+RPM_DIR="/tmp/se-dnf"
+OUT="/tmp/se-rootfs"
+EXT_DIR="/var/lib/extensions"
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+RAW_NAME="se-$TIMESTAMP.raw"
+
+# Collect packages
+mkdir -p "$D_PATH"
+ALL_PACKAGES=()
+for file in "$D_PATH"/*.se; do
+    [[ -r "$file" ]] || continue
+    PACKAGES=()
+    source "$file"
+    ALL_PACKAGES+=("${PACKAGES[@]}")
+done
+
+(( ${#ALL_PACKAGES[@]} > 0 )) || { echo "No packages found — exiting"; exit 1; }
+
+# Download RPMs
+rm -rf "$RPM_DIR" && mkdir -p "$RPM_DIR"
+dnf download --destdir="$RPM_DIR" --resolve --use-host-config "${ALL_PACKAGES[@]}"
+
+# Extract RPMs, keep only /usr
+rm -rf "$OUT" && mkdir -p "$OUT"
+for rpm in "$RPM_DIR"/*.rpm; do
+    rpm2cpio "$rpm" | cpio -idm -D "$OUT"
+done
+find "$OUT" -mindepth 1 -maxdepth 1 ! -name usr -exec rm -rf {} +
+
+# Metadata
+META_DIR="$OUT/usr/lib/extension-release.d"
+mkdir -p "$META_DIR"
+printf 'ID=_any\nVERSION=%s\n' "$(date +%Y%m%d)" > "$META_DIR/extension-release.${RAW_NAME%.raw}"
+
+# Squash
+mksquashfs "$OUT" "/tmp/$RAW_NAME" -noappend
+find "$EXT_DIR" -maxdepth 1 -name "se-*.raw" -delete
+mv "/tmp/$RAW_NAME" "$EXT_DIR/"
+
+systemd-sysext refresh

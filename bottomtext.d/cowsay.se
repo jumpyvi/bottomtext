@@ -9,4 +9,3 @@ PACKAGES=( cowsay cowsay-beefymiracle )
 # EXTRA_YUMD_DIR="" # Dir with .repo for sysext only 
 # MAN=no # Disable manpages
 # RELOCATE_UDEV=no # Relocate udev from /etc/udev to /usr/lib/udev
-# ALLOW_ERASING=no

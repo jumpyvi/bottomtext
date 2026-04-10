@@ -18,15 +18,23 @@ This is meant to be a local layering replacement for Fedora, AlmaLinux Kitten 10
 
 For now, just add needed .repo files in `/etc/yum.repos.d/`
 
-## Configure packages
+## Configure System Extensions
+
+Enable the systemd unit to auto-update on new bootc update `sudo systemctl enable bottomtextd`
+
+> Check [./bottomtext.d/ ](bottomtext.d/) for working exemples
 
 Create as many `.se` file in /etc/bottomtext/bottomtext.d/ as you want
 
+### `PACKAGES`
 Add a field in the .se file with dnf packages names like `PACKAGES=( package1 package2 )`
 
-> Check [./bottomtext.d/cowsay.se ](bottomtext.d/cowsay.se)for an exemple
+### `EXTRA_ALLOW_EXEC`
+Extra paths to be allowed to execute by SELinux. </br>
+/usr is added by default </br>
+It is not needed if you only plan to run the binary manually
 
-Enable the systemd unit to auto-update on new bootc update `sudo systemctl enable bottomtextd`
+
 
 # Warning
 

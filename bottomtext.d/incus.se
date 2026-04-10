@@ -1,0 +1,3 @@
+PACKAGES=( incus )
+
+EXTRA_ALLOW_EXEC=( "/usr/libexec/incus/" )

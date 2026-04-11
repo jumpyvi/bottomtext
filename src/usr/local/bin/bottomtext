@@ -1,0 +1,128 @@
+#!/bin/bash
+set -euo pipefail
+
+D_PATH="/etc/bottomtext/bottomtext.d"
+RPM_DIR="/tmp/se-dnf"
+OUT="/tmp/se-rootfs"
+EXT_DIR="/var/lib/extensions"
+SYSUSERS_CONF="/etc/sysusers.d/bottomtext.conf"
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+SYSEXT_NAME="se-$TIMESTAMP.raw"
+
+mkdir -p "$D_PATH" "$EXT_DIR"
+RELABEL_PATHS=()
+ALL_ASSOCIATE_GROUPS=()
+PACKAGES_PROCESSED=false
+MOVE_ETC=false
+OVERWRITE_ETC=false
+
+rm -rf "$RPM_DIR" && mkdir -p "$RPM_DIR"
+
+for file in "$D_PATH"/*.se; do
+    [[ -r "$file" ]] || continue
+    
+    # Defaults
+    PACKAGES=()
+    EXTRA_ALLOW_EXEC=()
+    ADOPT_ETC="no"
+    ASSOCIATE_GROUPS=()
+    EXTRA_REPOS=()
+    EXTRA_COPR=()
+    
+    source "$file"
+    
+    for p in "${EXTRA_ALLOW_EXEC[@]}"; do
+        RELABEL_PATHS+=("$OUT${p}")
+    done
+    ALL_ASSOCIATE_GROUPS+=("${ASSOCIATE_GROUPS[@]}")
+    
+    # /etc management
+    if [[ "$ADOPT_ETC" == "overwrite" ]]; then
+        OVERWRITE_ETC=true; MOVE_ETC=true
+    elif [[ "$ADOPT_ETC" == "yes" ]]; then
+        MOVE_ETC=true
+    fi
+
+    if (( ${#PACKAGES[@]} > 0 )); then
+        PACKAGES_PROCESSED=true
+        DNF_ARGS=( "dnf" "download" "--destdir=$RPM_DIR" "--resolve" "--use-host-config" "--refresh" )
+        
+        # .repo files
+        if (( ${#EXTRA_REPOS[@]} > 0 )); then
+            TMP_REPOS=$(mktemp -d)
+            cp -a /etc/yum.repos.d/*.repo "$TMP_REPOS/" 2>/dev/null || true
+            for repo_url in "${EXTRA_REPOS[@]}"; do
+                repo_name="extra-$(echo "$repo_url" | md5sum | cut -c1-8).repo"
+                curl -sSLf "$repo_url" -o "$TMP_REPOS/$repo_name"
+            done
+            DNF_ARGS+=( "--setopt=reposdir=$TMP_REPOS" )
+        fi
+
+        # copr repos
+        for copr in "${EXTRA_COPR[@]}"; do
+            echo "Enabling COPR: $copr"
+            dnf copr enable -y "$copr"
+            REPO_ID="copr:copr.fedorainfracloud.org:$(echo "$copr" | tr '/' ':')"
+            
+            echo "Disabling $REPO_ID on host via setopt..."
+            dnf config-manager setopt "${REPO_ID}.enabled=0"
+            
+            DNF_ARGS+=( "--enablerepo=$REPO_ID" )
+        done
+
+        echo "Downloading packages for $file..."
+        "${DNF_ARGS[@]}" "${PACKAGES[@]}"
+
+        [[ -d "${TMP_REPOS:-/dev/null}" ]] && rm -rf "$TMP_REPOS"
+    fi
+done
+
+if [ "$PACKAGES_PROCESSED" = "false" ]; then
+    echo "No packages found, exit"; exit 1
+fi
+
+# Extract RPMs
+rm -rf "$OUT" && mkdir -p "$OUT"
+for rpm in "$RPM_DIR"/*.rpm; do
+    rpm2cpio "$rpm" | cpio -idm -D "$OUT" 2>/dev/null
+done
+
+# Move files to real /etc
+if [ -d "$OUT/etc" ]; then
+    if [ "$OVERWRITE_ETC" = "true" ]; then
+        cp -a "$OUT/etc/." /etc/
+    elif [ "$MOVE_ETC" = "true" ]; then
+        cp -an "$OUT/etc/." /etc/
+    fi
+    rm -rf "$OUT/etc"
+fi
+
+# Clean extra dirs that cannot be merged
+find "$OUT" -mindepth 1 -maxdepth 1 ! -name usr -exec rm -rf {} +
+
+# Create the sysusers file in /etc/sysusers.d
+if (( ${#ALL_ASSOCIATE_GROUPS[@]} > 0 )); then
+    mkdir -p "/etc/sysusers.d"
+    # m user group
+    printf "m %s\n" "${ALL_ASSOCIATE_GROUPS[@]}" > "$SYSUSERS_CONF"
+    command -v systemd-sysusers >/dev/null && systemd-sysusers "$SYSUSERS_CONF"
+fi
+
+# Relabel
+if [ -d "$OUT/usr" ]; then
+    chcon -R -t usr_t "$OUT/usr"
+    for target_path in "${RELABEL_PATHS[@]}"; do
+        [ -e "$target_path" ] && chcon -R -t bin_t "$target_path"
+    done
+fi
+
+# Generic extension release
+META_DIR_SYS="$OUT/usr/lib/extension-release.d"
+mkdir -p "$META_DIR_SYS"
+printf 'ID=_any\nVERSION=%s\n' "$(date +%Y%m%d)" > "$META_DIR_SYS/extension-release.${SYSEXT_NAME%.raw}"
+
+mksquashfs "$OUT" "/tmp/$SYSEXT_NAME" -noappend -xattrs
+find "$EXT_DIR" -maxdepth 1 -name "se-*.raw" -delete
+mv "/tmp/$SYSEXT_NAME" "$EXT_DIR/"
+systemd-sysext refresh
+ldconfig

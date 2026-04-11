@@ -1,3 +1,12 @@
 PACKAGES=( incus )
 
 EXTRA_ALLOW_EXEC=( "/usr/libexec/incus/" )
+
+# Move package ./etc
+# yes -> move files if they don't already exist at target
+# overwrite -> force move files to target
+# no -> ignore package ./etc
+ADOPT_ETC=yes
+
+# Replace "jumpyvi" with your user name
+ASSOCIATE_GROUPS=( "jumpyvi incus-admin" )

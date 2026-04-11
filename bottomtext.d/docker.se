@@ -1,0 +1,11 @@
+# All packages from the upstream doc, they will be ignored if they are already installed (like containerd on Bluefin)
+PACKAGES=( docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin )
+
+# Move etc to get default docker config
+ADOPT_ETC=yes
+
+# Add your user to the docker group, change to your username
+ASSOCIATE_GROUPS=( "jumpyvi docker" )
+
+# Extra remote .repo to add for this specific .se group
+EXTRA_REPOS=( "https://download.docker.com/linux/fedora/docker-ce.repo" )

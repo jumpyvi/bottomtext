@@ -5,7 +5,7 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/bin/bash --noprofile -c "/etc/bottomtext/bin/check-bootc-digest.sh"
+ExecStart=/usr/local/bin/check-bootc-digest.sh
 
 [Install]
 WantedBy=multi-user.target

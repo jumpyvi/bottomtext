@@ -14,9 +14,6 @@ This is meant to be a local layering replacement for Fedora, AlmaLinux Kitten 10
 
 `just man-run`
 
-## Configure repos
-
-For now, just add needed .repo files in `/etc/yum.repos.d/`
 
 ## Configure System Extensions
 
@@ -30,10 +27,44 @@ Create as many `.se` file in /etc/bottomtext/bottomtext.d/ as you want
 Add a field in the .se file with dnf packages names like `PACKAGES=( package1 package2 )`
 
 ### `EXTRA_ALLOW_EXEC`
-Extra paths to be allowed to execute by SELinux. </br>
+Extra paths to be allowed to be executed by SELinux. </br>
 /usr is added by default </br>
 It is not needed if you only plan to run the binary manually
 
+### `ADOPT_ETC`
+
+> [!NOTE]  
+> This does not use Confext as it is completly unusable on fedora, instead, the data is simply moved to your real /etc
+
+Move /etc content distributed by the packages to your /etc
+Possible values are:
+- `yes` : Move only if file doesnt exist
+- `overwrite` : Replace existing files
+- `no` : Ignore packages /etc
+
+### `ASSOCIATE_GROUPS`
+
+Add a user to a group using [systemd-sysusers](https://www.freedesktop.org/software/systemd/man/latest/systemd-sysusers.html)
+
+Exemple `ASSOCIATE_GROUPS=( "john libvirt" )`, will associate user "john" to group "libvirt".
+
+A reboot or regenerating group is needed to for this to apply.
+
+Groups/associations will **NOT** be automatically deleted if the file at /etc/sysusers.d/bottomtext.conf is deleted
+
+
+### `EXTRA_REPO`
+
+Add remote .repo files
+
+`EXTRA_REPOS=( "https://download.docker.com/linux/fedora/docker-ce.repo" )`
+
+
+### `EXTRA_COPR`
+
+Add a repo from copr
+
+`EXTRA_COPR=( "ublue-os/packages" )`
 
 
 # Warning

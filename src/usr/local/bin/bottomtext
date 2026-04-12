@@ -45,7 +45,7 @@ for file in "$D_PATH"/*.se; do
 
     if (( ${#PACKAGES[@]} > 0 )); then
         PACKAGES_PROCESSED=true
-        DNF_ARGS=( "dnf" "download" "--destdir=$RPM_DIR" "--resolve" "--use-host-config" "--refresh" )
+        DNF_ARGS=( "dnf" "download" "--destdir=$RPM_DIR" "--resolve" "--use-host-config" "--refresh" "--arch=x86_64" )
         
         # .repo files
         if (( ${#EXTRA_REPOS[@]} > 0 )); then

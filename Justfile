@@ -11,6 +11,19 @@ install:
         systemctl daemon-reload
     '
 
+uninstall-everything:
+    #!/bin/env bash
+        sudo bash -c '
+        rm -rf /etc/bottomtext/
+
+        rm /etc/systemd/system/bottomtextd.service
+
+        rm /var/lib/extensions/*
+
+        systemd-sysext refresh
+        systemctl daemon-reload
+    '
+
 man-run:
     sudo /usr/local/bin/bottomtext
 

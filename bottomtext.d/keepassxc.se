@@ -1,0 +1,5 @@
+PACKAGES=( librewolf keepassxc )
+
+ADOPT_ETC=yes
+
+EXTRA_REPOS=( "https://repo.librewolf.net/librewolf.repo" )

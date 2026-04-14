@@ -2,12 +2,12 @@ install:
     #!/bin/env bash
         sudo bash -c '
         mkdir -p /etc/bottomtext/bottomtext.d/
+        mkdir -p /etc/bottomtext/bin/
 
-        mksquashfs ./src ./bottomtext-manager.raw
-        mv ./bottomtext-manager.raw /var/lib/extensions/
+        install -m 755 ./bottomtext /etc/bottomtext/bin/
+        install -m 755 ./check-bootc-digest.sh /etc/bottomtext/bin/
         install -m 644 ./unit/bottomtextd.service /etc/systemd/system/
 
-        systemd-sysext refresh
         systemctl daemon-reload
     '
 

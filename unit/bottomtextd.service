@@ -2,10 +2,11 @@
 Description=Run tasks when bootc image digest changes
 After=network-online.target
 Wants=network-online.target
+After=display-manager.service
 
 [Service]
 Type=oneshot
-ExecStart=bash --noprofile -c "/usr/local/bin/check-bootc-digest.sh"
+ExecStart=bash --noprofile -c "/etc/bottomtext/bin/check-bootc-digest.sh"
 
 [Install]
 WantedBy=multi-user.target

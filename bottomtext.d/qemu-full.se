@@ -2,7 +2,6 @@ PACKAGES=(
     qemu-kvm 
     libvirt 
     ublue-os-libvirt-workarounds
-    edk2-ovmf 
     genisoimage 
     libvirt-nss 
     virt-v2v 
@@ -15,9 +14,6 @@ ADOPT_ETC=yes
 # You can also run manual fixes in /etc if ADOPT_ETC is enabled
 mkdir -p /etc/ld.so.conf.d
 echo "/usr/lib64/iscsi" > /etc/ld.so.conf.d/iscsi-libvirt.conf
-
-# Extra copr to add and enable
-EXTRA_COPR=( "ublue-os/packages" )
 
 
 # You have to reboot for this one

@@ -12,6 +12,8 @@ This is meant to be a local layering replacement for Fedora, AlmaLinux Kitten 10
 
 ## First initialization run
 
+> This is required to generate the required file for aut-updates
+
 `just man-run`
 
 
@@ -21,7 +23,7 @@ Enable the systemd unit to auto-update on new bootc update `sudo systemctl enabl
 
 > Check [./bottomtext.d/ ](bottomtext.d/) for working exemples
 
-Create as many `.se` file in /etc/bottomtext/bottomtext.d/ as you want
+Create as many `.se` file in `/etc/bottomtext/bottomtext.d/` as you want
 
 ### `PACKAGES`
 Add a field in the .se file with dnf packages names like `PACKAGES=( package1 package2 )`
@@ -77,3 +79,14 @@ Add a repo from copr
 ## Untested
 
 This is not really well tested yet, while simple program should work without issues, more complex services might fail when sysexts are reloaded.
+
+## Debug
+
+### My login manager no longer start
+
+Switch to a TTY, `sudo rm /var/lib/extensions/*`, then reboot
+
+### I can't even reach the login manager
+
+In grub, press `e` to edit your config, then add `systemd.mask=systemd-sysext.service` to your boot parameters
+Once you've booted, run `sudo rm /var/lib/extensions/*` then reboot

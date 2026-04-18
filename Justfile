@@ -25,7 +25,7 @@ uninstall-everything:
     '
 
 man-run:
-    sudo /usr/local/bin/bottomtext
+    sudo /etc/bottomtext/bin/bottomtext
 
 
     

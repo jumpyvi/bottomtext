@@ -4,6 +4,10 @@ Install and auto-update sysexts in declarative manner. </br>
 This is meant to be a local layering replacement for Fedora, AlmaLinux Kitten 10 and Centos 10.
 
 
+> [!CAUTION]
+> This is super-experimental. Sysexts may behave weirdly. Please test in an isolated environment.
+
+
 # Setup
 
 ## Install

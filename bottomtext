@@ -90,9 +90,9 @@ done
 # Move files to real /etc
 if [ -d "$OUT/etc" ]; then
     if [ "$OVERWRITE_ETC" = "true" ]; then
-        rsync -av "$OUT/etc/." /etc/
-    elif [ "$MOVE_ETC" = "true" ]; then
         rsync -av --ignore-existing "$OUT/etc/." /etc/
+    elif [ "$MOVE_ETC" = "true" ]; then
+        rsync -rlv --ignore-existing "$OUT/etc/." /etc/
     fi
     rm -rf "$OUT/etc"
 fi

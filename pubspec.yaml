@@ -1,0 +1,17 @@
+name: bottomtext
+description: >-
+  Have you been turned into a newt?  Would you like to be?
+  This package can help. It has all of the
+  newt-transmogrification functionality you have been looking
+  for.
+version: 0.0.1
+homepage: https://example-pet-store.com/newtify
+documentation: https://example-pet-store.com/newtify/docs
+
+environment:
+  sdk: '^3.2.0'
+
+dependencies:
+  yaml: ^3.1.0
+  colored_logger: ^2.1.0
+  args: ^2.7.0

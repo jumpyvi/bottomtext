@@ -10,7 +10,7 @@ class SysextManager {
     var upperUsr = Directory('$upperDir/usr');
     if (!await upperUsr.exists()) {
       throw Exception(
-        'Expected upper/usr directory not found at ${upperUsr.path}',
+        'Expected directory not found at ${upperUsr.path}',
       );
     }
 

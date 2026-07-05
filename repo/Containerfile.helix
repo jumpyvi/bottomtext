@@ -1,0 +1,9 @@
+FROM cgr.dev/chainguard/wolfi-base:latest AS builder
+RUN apk add --no-cache curl
+
+RUN mkdir -p /sysext/usr/bin
+RUN curl -L https://github.com/helix-editor/helix/releases/download/25.07.1/helix-25.07.1-x86_64-linux.tar.xz | tar -xJ
+RUN cp helix-*/hx /sysext/usr/bin/hx
+
+FROM scratch
+COPY --from=builder /sysext/usr /usr

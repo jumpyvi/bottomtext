@@ -1,9 +1,0 @@
-# copr-packages:
-#   - url: "ublue-os/webapp-manager"
-#     packages:
-#       - "bazaar"
-#       - "uupd"
-
-dnf-packages:
-  - "cowsay"
-  - "sl"

@@ -1,0 +1,13 @@
+name: Build Helix
+
+on:
+  push:
+    paths:
+      - 'repo/Containerfile.helix'
+  workflow_dispatch:
+
+jobs:
+  call-reusable-build:
+    uses: ./.github/workflows/build-reusable.yml
+    with:
+      name: 'helix'

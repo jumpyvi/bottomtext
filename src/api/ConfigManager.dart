@@ -1,61 +1,83 @@
 import 'dart:io';
-import 'package:colored_logger/colored_logger.dart';
-import 'package:yaml/yaml.dart';
-
-import '../elements/ArchPkg.dart';
-import '../elements/AurPkg.dart';
-import '../elements/CoprPkg.dart';
-import '../elements/DnfPkg.dart';
-import '../elements/OS.dart';
-import '../elements/Pkg.dart';
 
 class Configmanager {
-  final File config;
 
-  Configmanager(this.config);
+  static final File file = File('/etc/bottomtext/store.txt');
 
-  Set<Pkg> _getPackages<T extends Pkg>(
-      String yamlKey, T Function(String) builder) {
-    final yamlMap = loadYaml(config.readAsStringSync());
-    if (yamlMap == null) return {};
+  static void add(String value) {
+    final int lastSlash = value.lastIndexOf('/');
+    final int colon = value.lastIndexOf(':');
 
-    final packages = yamlMap[yamlKey];
-    if (packages is List) {
-      return packages.map((package) => builder(package as String)).toSet();
+    if (lastSlash == -1 || colon == -1 || lastSlash > colon) {
+      print(
+          'Error: Value format invalid. Expected something like "path/to/key:tag"');
+      return;
     }
 
-    return {};
+    final String key = value.substring(lastSlash + 1, colon);
+
+    if (!file.existsSync()) {
+      file.createSync();
+    }
+
+    final List<String> lines = file.readAsLinesSync();
+
+    final bool exists = lines.any((line) => line.startsWith('$key='));
+
+    if (!exists) {
+      file.writeAsStringSync('$key=$value\n', mode: FileMode.append);
+      print('Added: $key=$value');
+    } else {
+      print('Ignored: Key "$key" already exists.');
+    }
+}
+
+static void remove(String searchString) {
+  if (!file.existsSync()) {
+    print('Store is empty.');
+    return;
   }
 
-  Set<Pkg> getPackages(OS system) {
-    switch (system.name.toLowerCase()) {
-      case 'archlinux':
-        return {
-          ..._getPackages<Archpkg>('arch-packages', (name) => Archpkg(name)),
-          ..._getPackages<Aurpkg>('aur-packages', (name) => Aurpkg(name)),
-        };
-      case 'fedora':
-        return {
-          ..._getPackages<Dnfpkg>('dnf-packages', (name) => Dnfpkg(name)),
-          ..._getPackages<Coprpkg>('copr-packages', (name) => Coprpkg(name)),
-        };
-      default:
-        throw ArgumentError('Mysterious OS: ${system.name}');
-    }
+  final List<String> lines = file.readAsLinesSync();
+
+  final List<String> newLines =
+      lines.where((line) => !line.contains(searchString)).toList();
+
+  if (lines.length == newLines.length) {
+    print('No matches found for "$searchString".');
+  } else {
+    final content = newLines.isEmpty ? '' : '${newLines.join('\n')}\n';
+    file.writeAsStringSync(content);
+    print(
+        'Removed ${lines.length - newLines.length} entry/entries matching "$searchString".');
+  }
+}
+
+static List<String> getValues() {
+    if (!file.existsSync()) return [];
+
+    return file
+        .readAsLinesSync()
+        .map((line) {
+          final parts = line.split('=');
+          return parts.length > 1 ? parts[1] : '';
+        })
+        .where((val) => val.isNotEmpty)
+        .toList();
   }
 
-  static Set<File> getEnabledConfigs() {
-    final dir = Directory('/etc/bottomtext.d');
-    try {
-      return dir
-          .listSync()
-          .whereType<File>()
-          .where((file) => file.path.endsWith('.yaml'))
-          .toSet();
-    } catch (e) {
-      ColoredLogger.error(
-          'Error reading from /etc/bottomtext.d, does it exists?');
-      exit(0);
+  static Map<String, String> getPackages() {
+    final File file = File('store.txt');
+    if (!file.existsSync()) return {};
+
+    final Map<String, String> packages = {};
+    for (var line in file.readAsLinesSync()) {
+      final parts = line.split('=');
+      if (parts.length > 1) {
+        packages[parts[0]] = parts.sublist(1).join('=');
+      }
     }
+    return packages;
   }
+
 }

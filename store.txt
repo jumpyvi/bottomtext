@@ -1,0 +1,1 @@
+helix=localhost:5000/helix:latest

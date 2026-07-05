@@ -5,12 +5,7 @@ compile:
 
 
 quick-setup: (compile)
-    sudo rm -rf /var/lib/extensions/bottomtext.raw
-    sudo systemd-sysext refresh
-    sudo mkdir -p /etc/bottomtext.d/interactive/
-    sudo touch /etc/bottomtext.d/interactive/i.yaml
-    sudo ./bottomtext
+    sudo mkdir -p /etc/bottomtext
 
-remove:
-    sudo rm -rf /var/lib/extensions/bottomtext.raw
-    sudo systemd-systext refresh
+# remove:
+#     sudo systemd-systext refresh

@@ -2,76 +2,60 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:colored_logger/colored_logger.dart';
-import 'api/MetadataManager.dart';
-import 'api/NSpawnAPI.dart';
-import 'api/PackageManager.dart';
-import 'api/Pacman.dart';
-import 'api/SysextManager.dart';
-import 'elements/OS.dart';
-import 'elements/Pack.dart';
+
 import 'api/ConfigManager.dart';
+import 'api/Oras.dart';
+import 'api/Sysext.dart';
 
-
-  Set<Pack> enabledPacks = {};
-
-  void _loadEnabledConfigs(OS currentOS) {
-      for (final yamlFile in Configmanager.getEnabledConfigs()) {
-        var newPack = Pack(yamlFile, currentOS);
-        enabledPacks.add(newPack);
-        ColoredLogger.success('Pack $newPack loaded');
-      }
-  }
 
   void _printHelp(){
-    ColoredLogger.info('Run `sudo bottomtext daemon` to start installing from config files \n ');
+    ColoredLogger.info('Run `bottomtext add SOURCE` to start installing from OCI repos \n ');
   }
 
-  void _run() async{
-    ColoredLogger.info("Creating temp directories...");
-    
-    await NspawnAPI.createWorkDirs("bottomtext");
+  void sync() async{
+    ColoredLogger.info("Starting sync...");
+      try {
+        final extDir = Directory('/var/lib/extensions');
 
-    PackageManager pm = Pacman();
+        if (!extDir.existsSync()) {
+          extDir.createSync(recursive: true);
+        }
 
-    try {
-      for (final pack in enabledPacks) {
-          for(final package in pack.packages){
-            await pm.install(package);
-          } 
+        ColoredLogger.info("Removing bottomtext managed extensions...");
+        for (var entity in extDir.listSync()) {
+          if (entity is Directory && entity.path.endsWith('_bt')) {
+            entity.deleteSync(recursive: true);
+            ColoredLogger.info("Removed ${entity.path}");
+          }
+        }
+
+        Map<String, String> packages = Configmanager.getPackages();
+
+        if (packages.isEmpty) {
+          ColoredLogger.warning("No packages found in configuration.");
+          exit(1);
+        }
+
+        for (var entry in packages.entries) {
+          final pkgName = entry.key;
+          final pkgUrl = entry.value;
+
+          final outDir = '${extDir.path}/${pkgName}_bt';
+
+          Directory(outDir).createSync(recursive: true);
+
+          ColoredLogger.info("Pulling $pkgName into $outDir...");
+          await Oras.pull(pkgUrl, outputDir: outDir);
+        }
+
+        ColoredLogger.info("Refreshing system extensions...");
+        await Sysext.refresh();
+        ColoredLogger.info("Sync complete!");
+
+      } catch (e) {
+        ColoredLogger.info("Sync failed: $e");
+        exit(1);
       }
-
-      ColoredLogger.info('Starting sysext generation');
-      ColoredLogger.info('Extracting /usr from nspawn...');
-      await SysextManager.createFromUpper(NspawnAPI.upperDir, 'bottomtext');
-
-      ColoredLogger.info('Refreshing sysext');
-      await SysextManager.refresh();
-      ColoredLogger.success('Packages merged successfully');
-    } catch (e) {
-      print('Error: $e');
-    } finally {
-      await NspawnAPI.cleanup();
-    }
-  }
-
-  void daemon() async{
-
-    String id = await Metadatamanager.id();
-    OS currentOS;
-
-    switch(id){
-      case "arch":
-        currentOS = OS.archlinux;
-      case "fedora":
-        currentOS = OS.fedora;
-      default:
-        throw UnsupportedError("Your OS is not supported");
-    }
-
-    ColoredLogger.success("Detected OS is: " + currentOS.name);
-    _loadEnabledConfigs(currentOS);
-    _run();
-
   }
 
 
@@ -80,12 +64,45 @@ import 'api/ConfigManager.dart';
     var parser = ArgParser();
     parser.addFlag('help', abbr: 'h', negatable: false);
 
+    parser.addCommand('sync');
+    parser.addCommand('add');
+    parser.addCommand('del');
+
     var results = parser.parse(args);
+
     if (results['help']) {
       _printHelp();
       exit(0);
     }
 
-    
-    daemon();
+    var commandArgs = results.command!.rest;
+
+    switch (results.command?.name) {
+      case 'sync':
+        ColoredLogger.info("sync");
+        sync();
+        break;
+      case 'add':
+        if (commandArgs.isEmpty) {
+        ColoredLogger.warning("Please provide a package to add.");
+        exit(1);
+        }
+        Configmanager.add(commandArgs.first);
+        break;
+      case 'del':
+        if (commandArgs.isEmpty) {
+          ColoredLogger.warning("Please provide a package to remove.");
+          exit(1);
+        }
+        Configmanager.remove(commandArgs.first);
+        break;
+      default:
+        ColoredLogger.warning("No subcommands found");
+    }
+
+    if (results.command == null) {
+      _printHelp();
+      exit(1);
+    }
+
   }
